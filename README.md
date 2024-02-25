@@ -1,3 +1,5 @@
+YouTube Video Link: https://youtu.be/IpvyU9LtTP8
+
 Position Class: This class represents a position on the game board. It has two properties, X and Y, which represent the coordinates of the position.
 
 Player Class: This class represents a player in the game. It has three properties: Name (the player's name), Position (the player's current position on the board), and GemCount (the number of gems collected by the player). The Move method updates the player's position based on the input direction (U, D, L, or R).

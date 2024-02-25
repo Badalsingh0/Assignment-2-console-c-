@@ -1,10 +1,10 @@
 ﻿// See https://aka.ms/new-console-template for more information
 using System;
 
-public class Position
+class Position
 {
-    public int X { get; }
-    public int Y { get; }
+    public int X { get; set; }
+    public int Y { get; set; }
 
     public Position(int x, int y)
     {
@@ -13,276 +13,144 @@ public class Position
     }
 }
 
-public class Player
+class Player
 {
-    public string Name { get; }
+    public string Name { get; set; }
     public Position Position { get; set; }
-    public int GemCount { get; set; }
+    public int GemsCount { get; set; } = 0;
 
-    public Player(string name, Position position)
-    {
-        Name = name;
-        Position = position;
-        GemCount = 0;
-    }
+    public Player(string name, int x, int y) => (Name, Position, GemsCount) = (name, new Position(x, y), 0);
 
     public void Move(char direction)
     {
         switch (direction)
         {
             case 'U':
-                Position = new Position(Position.X, Position.Y - 1);
+                Position.Y--;
                 break;
             case 'D':
-                Position = new Position(Position.X, Position.Y + 1);
+                Position.Y++;
                 break;
             case 'L':
-                Position = new Position(Position.X - 1, Position.Y);
+                Position.X--;
                 break;
             case 'R':
-                Position = new Position(Position.X + 1, Position.Y);
-                break;
-            default:
-                Console.WriteLine("Invalid direction.");
+                Position.X++;
                 break;
         }
     }
 }
 
-public class Cell
+class Game
 {
-    public string Occupant { get; set; }
-
-    public Cell()
-    {
-        Occupant = "-";
-    }
-}
-
-public class Board
-{
-    public const int Size = 6;
-    public Cell[,] Grid { get; }
-
-    public Board()
-    {
-        Grid = new Cell[Size, Size];
-        InitializeGrid();
-    }
-
-    private void InitializeGrid()
-    {
-        // Initialize grid with empty cells
-        for (int i = 0; i < Size; i++)
-        {
-            for (int j = 0; j < Size; j++)
-            {
-                Grid[i, j] = new Cell();
-            }
-        }
-
-        // Place players
-        Grid[0, 0].Occupant = "P1";
-        Grid[Size - 1, Size - 1].Occupant = "P2";
-
-        // Place gems and obstacles (random placement not implemented)
-        Grid[1, 1].Occupant = "G";
-        Grid[4, 4].Occupant = "G";
-        Grid[2, 2].Occupant = "O";
-        Grid[3, 3].Occupant = "O";
-        Grid[1, 2].Occupant = "G";
-        Grid[4, 3].Occupant = "G";
-        Grid[2, 5].Occupant = "O";
-        Grid[4, 5].Occupant = "O";
-    }
-
-    public void Display()
-    {
-        Console.WriteLine("Current Board:");
-        Console.WriteLine("");
-        for (int i = 0; i < Size; i++)
-        {
-            for (int j = 0; j < Size; j++)
-            {
-                Console.Write($"{Grid[i, j].Occupant} ");
-            }
-            Console.WriteLine();
-        }
-    }
-
-    public bool IsValidMove(Player player, char direction)
-    {
-        int newX = player.Position.X;
-        int newY = player.Position.Y;
-
-        switch (direction)
-        {
-            case 'U':
-                newY--;
-                break;
-            case 'D':
-                newY++;
-                break;
-            case 'L':
-                newX--;
-                break;
-            case 'R':
-                newX++;
-                break;
-            default:
-                Console.WriteLine("Invalid direction.");
-                return false;
-        }
-
-        // Check if the new position is within the bounds of the board
-        if (newX < 0 || newX >= Size || newY < 0 || newY >= Size)
-        {
-            Console.WriteLine("Out of bounds.");
-            Console.WriteLine("");
-            return false;
-        }
-
-        // Check if the new position contains an obstacle
-        if (Grid[newY, newX].Occupant == "O")
-        {
-            Console.WriteLine("Obstacle in the way.");
-            Console.WriteLine("");
-            return false;
-        }
-
-        return true;
-    }
-
-    public void CollectGem(Player player)
-    {
-        int x = player.Position.X;
-        int y = player.Position.Y;
-
-        if (Grid[y, x].Occupant == "G")
-        {
-            player.GemCount++;
-            Grid[y, x].Occupant = "-"; // Remove the gem from the board
-        }
-    }
-}
-public class Game
-{
-    private const int TotalTurns = 30;
-    public readonly Board _board;
-    private readonly Player _Player1_;
-    private readonly Player _Player2_;
-    private Player _currentTurn;
+    private char[,] Occupant = new char[6, 6];
+    private Player player1 = new Player("P1", 0, 0);
+    private Player player2 = new Player("P2", 5, 5);
+    private int turn = 0;
+    private Random rand = new Random();
 
     public Game()
     {
-        _board = new Board();
-        _Player1_ = new Player("P1", new Position(0, 0));
-        _Player2_ = new Player("P2", new Position(5, 5));
-        _currentTurn = _Player1_;
+        PlaceItems();
+    }
+    private void PlaceItems()
+    {
+        for (int y = 0; y < 6; y++)
+            for (int x = 0; x < 6; x++)
+                Occupant[x, y] = '-';
+
+        PlaceRandomItems('G', 6);
+        PlaceRandomItems('O', 7);
+    }
+
+    private void PlaceRandomItems(char item, int count)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            int x, y;
+            do
+            {
+                x = rand.Next(6);
+                y = rand.Next(6);
+            } while (Occupant[x, y] != '-' || (x == player1.Position.X && y == player1.Position.Y) || (x == player2.Position.X && y == player2.Position.Y));
+            Occupant[x, y] = item;
+        }
     }
 
     public void Start()
     {
-        while (!IsGameOver())
-
+        while (turn < 30)
         {
-            Console.WriteLine("----------------------------");
-            _board.Display();
-            Console.WriteLine($"\nIt's {_currentTurn.Name}'s turn.\n");
-            Console.WriteLine("Enter direction (U/D/L/R):");
-            char direction = char.ToUpper(Console.ReadKey().KeyChar);
+
+            Console.WriteLine($"---------------------------------------");
+            Console.WriteLine();
+            Display();
+            Console.WriteLine();
+            Player currentPlayer = turn % 2 == 0 ? player1 : player2;
+            Console.WriteLine($"{currentPlayer.Name}'s turn. Enter your move (U/D/L/R): ");
+            var direction = Char.ToUpper(Console.ReadKey(true).KeyChar);
             Console.WriteLine();
 
-            if (_board.IsValidMove(_currentTurn, direction))
+            Position CurrentPosition = new Position(currentPlayer.Position.X, currentPlayer.Position.Y); // Save original position
+            currentPlayer.Move(direction);
+
+            if (!IsValidMove(currentPlayer))
             {
-
-
-                // Update the board with "-" at the previous positions
-                _board.Grid[_currentTurn.Position.Y, _currentTurn.Position.X].Occupant = "-";
-
-                // Move the player to the new position
-                _currentTurn.Move(direction);
-
-                // Update the board with the new position
-                _board.Grid[_currentTurn.Position.Y, _currentTurn.Position.X].Occupant = _currentTurn.Name;
-
-                // Collect gem if present at the new position
-                _board.CollectGem(_currentTurn);
-
-                // Switch to the next turn
-                SwitchTurn();
+                Console.WriteLine("You've hit an obstacle! Try a different direction.");
+                currentPlayer.Position = CurrentPosition; // Reset to original position if invalid move
+                continue;
             }
-            else
-            {
-                Console.WriteLine("Invalid move. Try again.");
-                Console.WriteLine("");
-            }
+
+            CollectGemsCount(currentPlayer);
+            turn++;
+            Console.WriteLine($"---------------------------------------");
         }
         AnnounceWinner();
     }
 
-    private void SwitchTurn()
-    {
-        // Switch the turn
-        _currentTurn = _currentTurn == _Player1_ ? _Player2_ : _Player1_;
+    private bool IsValidMove(Player player) => player.Position.X >= 0 && player.Position.X < 6 && player.Position.Y >= 0 && player.Position.Y < 6 && Occupant[player.Position.X, player.Position.Y] != 'O';
 
-        // Update player positions based on their names
-        _Player1_.Position = GetPlayerPosition(_Player1_);
-        _Player2_.Position = GetPlayerPosition(_Player2_);
-    }
-
-    private Position GetPlayerPosition(Player player)
+    private void CollectGemsCount(Player player)
     {
-        for (int i = 0; i < Board.Size; i++)
+        if (Occupant[player.Position.X, player.Position.Y] == 'G')
         {
-            for (int j = 0; j < Board.Size; j++)
-            {
-                if (_board.Grid[i, j].Occupant == player.Name)
-                {
-                    return new Position(j, i);
-                }
-            }
+            player.GemsCount++;
+            Occupant[player.Position.X, player.Position.Y] = '-';
         }
-
-        // Return the default position if not found (this should not happen in a correct game state)
-        return player.Position;
     }
 
-
-
-    private bool IsGameOver()
+    private void Display()
     {
-        return _Player1_.GemCount + _Player2_.GemCount >= TotalTurns;
+        Console.WriteLine($"Turn: {turn + 1}");
+        for (int y = 0; y < 6; y++)
+        {
+            for (int x = 0; x < 6; x++)
+            {
+                if (x == player1.Position.X && y == player1.Position.Y)
+                    Console.Write("P1 ");
+                else if (x == player2.Position.X && y == player2.Position.Y)
+                    Console.Write("P2 ");
+                else Console.Write($"{Occupant[x, y]} ");
+            }
+            Console.WriteLine();
+        }
     }
 
     private void AnnounceWinner()
     {
-        Console.WriteLine("");
-        Console.WriteLine("Game over!");
-        Console.WriteLine("");
-        Console.WriteLine($"Player 1 collected {_Player1_.GemCount} gems.");
-        Console.WriteLine($"Player 2 collected {_Player2_.GemCount} gems.");
-        Console.WriteLine("");
-        if (_Player1_.GemCount > _Player2_.GemCount)
-        {
-            Console.WriteLine("Player 1 wins!");
-        }
-        else if (_Player1_.GemCount < _Player2_.GemCount)
-        {
-            Console.WriteLine("Player 2 wins!");
-        }
-        else
-        {
-            Console.WriteLine("It's a tie!");
-        }
+        Console.WriteLine($"Game Over. \n{player1.Name} GemsCount: {player1.GemsCount} \n{player2.Name} GemsCount: {player2.GemsCount}");
+        Console.WriteLine();
+
+        string winner = player1.GemsCount > player2.GemsCount ? player1.Name : player2.GemsCount > player1.GemsCount ? player2.Name : "It's a tie!";
+
+        Console.WriteLine($"{winner} wins!");
     }
 }
 
-class Badal
+class Program
 {
-    static void Main(string[] args)
+    static void Main()
     {
-        Game game = new Game();
-        game.Start();
+        new Game().Start();
     }
 }
